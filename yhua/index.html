@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>烟花</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#000}
+canvas{display:block;width:100%;height:100%}
+.txt{
+    position:absolute;
+    color:#fff;
+    font-size:16px;
+    font-weight:bold;
+    text-shadow:0 0 10px #fff,0 0 20px #ffdd44;
+    pointer-events:none;
+    transform: translate(-50%,-50%);
+    animation:textFade 4.2s ease-out forwards;
+}
+/* 初始提示文字 */
+.tip{
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform: translate(-50%,-50%);
+    color:#ffffff;
+    font-size:28px;
+    text-shadow:0 0 8px #fff;
+    pointer-events:none;
+    animation:tipFade 3s ease-out forwards;
+}
+/* 音乐按钮 */
+.audioBtn{
+    position:absolute;
+    top:20px;
+    right:20px;
+    color:#fff;
+    font-size:24px;
+    background:rgba(0,0,0,0.4);
+    border:1px solid #fff;
+    border-radius:8px;
+    padding:6px 12px;
+    cursor:pointer;
+    z-index:999;
+}
+@keyframes textFade{
+    0%{opacity:1;transform: translate(-50%,-50%) translateY(0) scale(1)}
+    100%{opacity:0;transform: translate(-50%,-50%) translateY(-80px) scale(1.2)}
+}
+@keyframes tipFade{
+    0%{opacity:0;}
+    20%{opacity:1;}
+    80%{opacity:1;}
+    100%{opacity:0;}
+}
+</style>
+</head>
+<body>
+<canvas id="fire"></canvas>
+<div class="tip">点击屏幕任意位置绽放烟花✨</div>
+<audio id="bgMusic" loop>
+    <source src="yhuo.m4a" type="audio/mp4">
+
+<div class="audioBtn" id="audioBtn">🔊 音乐</div>
+<script>
+const canvas=document.getElementById('fire');
+const ctx=canvas.getContext('2d');
+const bgMusic = document.getElementById('bgMusic');
+const audioBtn = document.getElementById('audioBtn');
+let musicPlayed = false;
+
+audioBtn.onclick = function(){
+    if(bgMusic.paused){
+        bgMusic.play();
+        audioBtn.innerText = "🔇 静音";
+    }else{
+        bgMusic.pause();
+        audioBtn.innerText = "🔊 音乐";
+    }
+}
+
+function resize(){
+    canvas.width=window.innerWidth;
+    canvas.height=window.innerHeight;
+}
+resize();
+window.addEventListener('resize',resize);
+
+class Particle{
+    constructor(x,y,color){
+        this.x=x;
+        this.y=y;
+        const angle=Math.random()*Math.PI*2;
+        const speed=Math.random()*4+2;
+        this.vx=Math.cos(angle)*speed;
+        this.vy=Math.sin(angle)*speed;
+        this.alpha=1;
+        this.color=color;
+        this.decay=Math.random()*0.015+0.008;
+    }
+    update(){
+        this.x+=this.vx;
+        this.y+=this.vy;
+        this.alpha-=this.decay;
+    }
+    draw(){
+        ctx.save();
+        ctx.globalAlpha=this.alpha;
+        ctx.beginPath();
+        ctx.arc(this.x,this.y,2,0,Math.PI*2);
+        ctx.fillStyle=this.color;
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+class FireworkRocket{
+    constructor(targetX, targetY){
+        this.x = targetX;
+        this.targetY = targetY;
+        this.y = canvas.height;
+        this.speed = -7;
+        this.color = `hsl(${Math.random() * 360},100%,60%)`;
+        this.exploded = false;
+    }
+    update(){
+        if(!this.exploded){
+            this.y += this.speed;
+            if(this.y <= this.targetY){
+                this.explode();
+            }
+        }
+    }
+    explode(){
+        this.exploded = true;
+        for(let i=0;i<120;i++){
+            const p = new Particle(this.x,this.y,this.color);
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 6 + 3;
+            p.vx = Math.cos(angle)*speed;
+            p.vy = Math.sin(angle)*speed;
+            particles.push(p);
+        }
+    }
+    draw(){
+        if(!this.exploded){
+            ctx.beginPath();
+            ctx.arc(this.x,this.y,3,0,Math.PI*2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+        }
+    }
+}
+
+let particles=[];
+let rockets=[];
+
+const textList = [
+    "教官，辛苦啦！感谢这段时间的教导，祝您万事胜意——廖琼睫",
+    "前路漫漫多艰险，祝安康，愿道路开阔——席慧敏",
+    "祝教官天天开心，日后更优秀，人生顺利——王真儿",
+    "教官，你上次给我加练的俯卧俯不够多呀，希望下次继续上压力——吴嘉乐",
+    "教官的好我们一直都知道 祝海波教官以后事事顺意烦恼拜拜——雷玉祯",
+    "骄阳淬铁骨，清风送归程。感谢您的引路，让青春有了挺拔的姿态。祝教官岁岁长安——陈娜",
+    "教官，军训结束了，很感谢您的付出，祝您平安顺遂———宋涵铃",
+	"教官，这段时间辛苦，你对我们不严格，甚至可以说很轻松，我们会一直记住你的，让我们有这么好的教官，祝教官每天顺顺利利——唐景源",
+	"谢谢教官这个20天的陪伴，祝你天天开心，长命百岁——尹隆馨",
+	"祝教官事业有成 功成名就 大展鸿图 春风得意 心想事成， 教官辛苦了 —— 李晓菊",
+	"刘教官，很感谢您这20天的大刀教学与陪伴，辛苦了，愿您以后诸事皆顺、天天开心———石萱",
+	"教官，你的手劲还得练，其实一点都不疼，故意让着你的，下次再来——邝应谱",
+	"教官你的好我们都有看到 你很好 包容我们 相处时间虽然短暂但也很高兴遇到你 希望你天天开心少焦虑不要给自己那么大压力 多去做让自己开心的事情吧——肖晚星",
+	"谢谢教官的这段时间陪伴，这段军训经历特别珍贵，祝你往后平安喜乐，一切顺遂，要天天开心！——谢婉萍",
+	"谢谢刘教官这么久以来的陪伴，你的幽默让训练不再那么枯燥，祝你之后的日子天天开心——陈思钰",
+	"教官，感谢这段时间的教导，您辛苦了，祝您一切顺利。——姚奕媛",
+	"烈日下的陪伴 感恩遇见 教官辛苦了！愿教官平安顺遂——唐彩逸",
+	"很感谢教官这段时间的付出，祝您以后天天开心，前程坦荡，一切都好——龙湘琳",
+	"谢谢教官这一个月的陪伴，你对我们的好我们都能感受到，祝您以后平安喜乐，天天开心！——罗欣怡",
+	"感谢教官的谆谆教导及辛勤付出，祝愿教官天天开心，一切顺利 —刘瀚怿",
+	"军训虽落幕，铭记教诲，祝教官一切安好——段博瀚",
+	"感谢海波教官对大家的照顾和关心，希望你以后一切顺利，天天开心——刘宇琴",
+	"相遇即是缘，辛苦教官连日的严格打磨与照顾，这段成长的经历我们永远记在心里，祝教官们永远不死——万冬阳",
+	"军训时光感谢教官的教导，愿教官往后前程似锦——肖文奇",
+	"感谢教官对我们的包容与偏爱 在这段军训时光里有爱也有泪 愿教官在以后的日子里顺顺利利—赵丽欣",
+	"感谢教官这段时间的教导与陪伴，希望你前程似锦，万事顺遂！--周雨欣",
+	"很有幸能遇到波哥这种教官，在全营我们班是最轻松的。这段军训的经历我会记在心中，支持波哥，波哥永远第一——罗诗彬",
+	"军训的时光领我难忘，教官的教导让我明白很多也让我成长许多，感谢教官的教导—秦臻",
+	"教官，您辛苦了，这段军训时光很难忘，谢谢您耐心带领我们——胡欣怡",
+	"难忘训练岁月，祝教官前路尽是好风光—夏桂榕",
+	"感谢教官，陪伴了我们将近二十天，您的指指点点带给了我们很多欢乐——周倩如",
+	"感谢教官这一路的陪伴，愿你们往后心想事成，事事顺意——段嘉琪"
+];
+
+let textIndex = 0;
+
+function getNextText(){
+    const txt = textList[textIndex];
+    textIndex++;
+    if(textIndex >= textList.length){
+        textIndex = 0;
+    }
+    return txt;
+}
+
+canvas.addEventListener('click',e=>{
+    if(!musicPlayed){
+        bgMusic.play();
+        audioBtn.innerText = "🔇 静音";
+        musicPlayed = true;
+    }
+    const x=e.clientX;
+    const y=e.clientY;
+    const color = `hsl(${Math.random() * 360},100%,60%)`;
+    for(let i=0;i<120;i++){
+        const p = new Particle(x,y,color);
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 6 + 3;
+        p.vx = Math.cos(angle)*speed;
+        p.vy = Math.sin(angle)*speed;
+        particles.push(p);
+    }
+    const showText = getNextText();
+    const div=document.createElement('div');
+    div.className='txt';
+    div.innerText=showText;
+    div.style.left=x+'px';
+    div.style.top=y+'px';
+    document.body.appendChild(div);
+    setTimeout(()=>div.remove(),1600);
+})
+
+setInterval(()=>{
+    const rx = Math.random() * canvas.width;
+    const ry = Math.random() * canvas.height * 0.6;
+    rockets.push(new FireworkRocket(rx, ry));
+},2000)
+
+function loop(){
+    ctx.fillStyle='rgba(0,0,0,0.15)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    for(let i=rockets.length-1;i>=0;i--){
+        rockets[i].update();
+        rockets[i].draw();
+        if(rockets[i].exploded){
+            rockets.splice(i,1);
+        }
+    }
+    for(let i=particles.length-1;i>=0;i--){
+        particles[i].update();
+        particles[i].draw();
+        if(particles[i].alpha<=0){
+            particles.splice(i,1);
+        }
+    }
+    requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
